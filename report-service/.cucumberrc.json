@@ -1,0 +1,8 @@
+{
+  "default": {
+    "require": ["tests/bdd/step-definitions/**/*.ts"],
+    "requireModule": ["ts-node/register"],
+    "format": ["progress-bar", "html:tests/bdd/reports/report.html"],
+    "paths": ["tests/bdd/features/**/*.feature"]
+  }
+}

@@ -1,0 +1,63 @@
+# Docker Compose simplificado para rodar localmente os serviços principais.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-libraflow}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-libraflow}
+      POSTGRES_DB: ${DB_NAME:-libraflow}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-libraflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build: ./auth-service
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-libraflow}:${DB_PASSWORD:-libraflow}@postgres:5432/${DB_NAME:-libraflow}
+      JWT_SECRET: ${JWT_SECRET:-dev_secret}
+      PORT: 3001
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  catalog-service:
+    build: ./catalog-service
+    ports:
+      - "3002:3002"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-libraflow}:${DB_PASSWORD:-libraflow}@postgres:5432/${DB_NAME:-libraflow}
+      PORT: 3002
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  loan-service:
+    build: ./loan-service
+    ports:
+      - "3003:3003"
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-libraflow}:${DB_PASSWORD:-libraflow}@postgres:5432/${DB_NAME:-libraflow}
+      CATALOG_SERVICE_URL: http://catalog-service:3002
+      PORT: 3003
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+
+networks:
+  default:
+    name: libraflow-net
+
+volumes:
+  postgres-data:
