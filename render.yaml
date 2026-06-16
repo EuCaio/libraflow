@@ -1,71 +1,45 @@
-# Deploy simplificado para o Render
-# Mantém apenas os serviços principais do LibraFlow: auth, catalog e loan.
+databases:
+  - name: libraflow-db
+    plan: free
+    databaseName: libraflow
+    user: libraflow
 
 services:
   - type: web
     name: auth-service
     runtime: docker
-    dockerfilePath: ./auth-service/Dockerfile
-    dockerContext: ./auth-service
-    region: ohio
     plan: free
-    healthCheckPath: /health
+    rootDir: auth-service
     envVars:
-      - key: PORT
-        value: 3001
-      - key: NODE_ENV
-        value: production
       - key: DATABASE_URL
         fromDatabase:
           name: libraflow-db
-          property: internalDatabaseUrl
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
 
   - type: web
     name: catalog-service
     runtime: docker
-    dockerfilePath: ./catalog-service/Dockerfile
-    dockerContext: ./catalog-service
-    region: ohio
     plan: free
-    healthCheckPath: /health
+    rootDir: catalog-service
     envVars:
-      - key: PORT
-        value: 3002
-      - key: NODE_ENV
-        value: production
       - key: DATABASE_URL
         fromDatabase:
           name: libraflow-db
-          property: internalDatabaseUrl
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
 
   - type: web
     name: loan-service
     runtime: docker
-    dockerfilePath: ./loan-service/Dockerfile
-    dockerContext: ./loan-service
-    region: ohio
     plan: free
-    healthCheckPath: /health
+    rootDir: loan-service
     envVars:
-      - key: PORT
-        value: 3003
-      - key: NODE_ENV
-        value: production
       - key: DATABASE_URL
         fromDatabase:
           name: libraflow-db
-          property: internalDatabaseUrl
-      - key: CATALOG_SERVICE_URL
-        fromService:
-          name: catalog-service
-          type: web
-          property: host
-
-# Banco único para simplificar o deploy gratuito.
-databases:
-  - name: libraflow-db
-    databaseName: libraflow
-    user: libraflow_user
-    plan: free
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
