@@ -114,9 +114,24 @@ npm run test:coverage   # Relatório de Cobertura
 
 ## 6. 📡 Deploy e Link de Acesso
 
-O sistema está publicado e ativo na plataforma **Render**, com deploy automatizado via **GitHub Actions** e configuração declarativa pelo arquivo `render.yaml`.
+O sistema está publicado na plataforma **Render**, usando deploy simplificado com os principais microsserviços do LibraFlow.
 
-*   **URL da API:** [https://libraflow.onrender.com](https://libraflow.onrender.com)
-*   **Documentação Interativa:** [https://libraflow.onrender.com/api-docs](https://libraflow.onrender.com/api-docs)
+### Serviços publicados
 
----
+- **Auth Service:** https://auth-service-pxk0.onrender.com
+- **Catalog Service:** https://catalog-service-whlw.onrender.com
+- **Loan Service:** https://loan-service-2s8f.onrender.com
+
+### Documentação interativa
+
+- **Auth Docs:** https://auth-service-pxk0.onrender.com/api-docs
+- **Catalog Docs:** https://catalog-service-whlw.onrender.com/api-docs
+- **Loan Docs:** https://loan-service-2s8f.onrender.com/api-docs
+
+### Health Check
+
+- **Auth:** https://auth-service-pxk0.onrender.com/health
+- **Catalog:** https://catalog-service-whlw.onrender.com/health
+- **Loan:** https://loan-service-2s8f.onrender.com/health
+
+> Observação: a rota `/` pode retornar `404 Not Found`, pois o projeto é uma API backend e não possui página inicial. Para verificar se está funcionando, use `/health` ou `/api-docs`.
