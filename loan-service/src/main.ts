@@ -19,7 +19,6 @@ import { loanRoutes } from './presentation/routes/loanRoutes';
 async function bootstrap() {
   const PORT = parseInt(process.env.PORT ?? '3003');
 
-  // ── Infrastructure ─────────────────────────────────────────────────────────
   const prisma = new PrismaClient();
   await prisma.$connect();
 
@@ -33,60 +32,90 @@ async function bootstrap() {
     console.log('[loan-service] RabbitMQ não configurado. Eventos serão ignorados no deploy simplificado.');
   }
 
-  // ── Repositories & Clients ─────────────────────────────────────────────────
-  const loanRepository  = new PrismaLoanRepository(prisma);
-  const catalogClient   = new CatalogHttpClient(
+  const loanRepository = new PrismaLoanRepository(prisma);
+
+  const catalogClient = new CatalogHttpClient(
     process.env.CATALOG_SERVICE_URL ?? 'http://localhost:3002',
   );
 
-  // ── Domain Services ────────────────────────────────────────────────────────
   const loanDomainService = new LoanDomainService();
 
-  // ── Use Cases ──────────────────────────────────────────────────────────────
   const createLoanUseCase = new CreateLoanUseCase(
-    loanRepository, catalogClient, eventPublisher, loanDomainService,
+    loanRepository,
+    catalogClient,
+    eventPublisher,
+    loanDomainService,
   );
-  const returnBookUseCase = new ReturnBookUseCase(loanRepository, catalogClient, eventPublisher);
-  const renewLoanUseCase  = new RenewLoanUseCase(loanRepository, eventPublisher);
-  const listLoansUseCase  = new ListLoansUseCase(loanRepository);
 
-  // ── Controller ─────────────────────────────────────────────────────────────
+  const returnBookUseCase = new ReturnBookUseCase(
+    loanRepository,
+    catalogClient,
+    eventPublisher,
+  );
+
+  const renewLoanUseCase = new RenewLoanUseCase(
+    loanRepository,
+    eventPublisher,
+  );
+
+  const listLoansUseCase = new ListLoansUseCase(
+    loanRepository,
+  );
+
   const loanController = new LoanController(
-    createLoanUseCase, returnBookUseCase, renewLoanUseCase, listLoansUseCase,
+    createLoanUseCase,
+    returnBookUseCase,
+    renewLoanUseCase,
+    listLoansUseCase,
   );
 
-  // ── HTTP Server ────────────────────────────────────────────────────────────
   const app = Fastify({ logger: true });
 
   await app.register(swagger, {
     openapi: {
-      info: { title: 'LibraFlow — Loan Service', version: '1.0.0' },
-      tags: [{ name: 'Loans', description: 'Loan management endpoints' }],
+      info: {
+        title: 'LibraFlow — Loan Service',
+        version: '1.0.0',
+      },
+      tags: [
+        {
+          name: 'Loans',
+          description: 'Loan management endpoints',
+        },
+      ],
     },
   });
-  await app.register(swaggerUi, { routePrefix: '/api-docs' });
+
+  await app.register(swaggerUi, {
+    routePrefix: '/api-docs',
+  });
 
   await loanRoutes(app, loanController);
 
-  // Health check para Render
-  app.get('/health', async () => ({ status: 'ok', service: 'loan-service' }));
-
-  // ── Graceful Shutdown ──────────────────────────────────────────────────────
   const shutdown = async () => {
     console.log('[loan-service] Shutting down...');
     await app.close();
-    if (eventPublisher instanceof RabbitMQPublisher) await eventPublisher.close();
+
+    if (eventPublisher instanceof RabbitMQPublisher) {
+      await eventPublisher.close();
+    }
+
     await prisma.$disconnect();
     process.exit(0);
   };
-  process.on('SIGTERM', shutdown);
-  process.on('SIGINT',  shutdown);
 
-  await app.listen({ port: PORT, host: '0.0.0.0' });
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
+
+  await app.listen({
+    port: PORT,
+    host: '0.0.0.0',
+  });
+
   console.log(`[loan-service] Listening on port ${PORT}`);
 }
 
-bootstrap().catch(err => {
+bootstrap().catch((err) => {
   console.error('[loan-service] Fatal error:', err);
   process.exit(1);
 });
